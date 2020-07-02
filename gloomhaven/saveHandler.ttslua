@@ -50,6 +50,35 @@ function saveHandler.loadAll()
   Preparation.start(function() saveHandler.doLoadAll(content) end)
 end
 
+function saveHandler.loadFromURL(url)
+  -- requires RAW JSON returned form url
+  WebRequest.get(url,
+  function(webReturn)
+      saveFile=webReturn.text
+      local content = JSON.decode(saveFile)
+      preparation.start(function() saveHandler.doLoadAll(content) end)
+    end)
+end
+
+function saveHandler.loadFromGist(gist)
+  WebRequest.get('https://api.github.com/gists/'..gist,
+  function(webReturn)
+      saveFile=webReturn.text
+      local gistJSON = JSON.decode(saveFile)
+      for filename, fileDetails in pairs(gistJSON.files) do
+      if not fileDetails.truncated then
+        local content = JSON.decode(fileDetails.content)
+        preparation.start(function() saveHandler.doLoadAll(content) end)
+      else
+        broadcastToAll("Content Truncated.  Loading Failed")
+        -- TODO:  Determine if I need to and how to handle Content Truncated.
+      end
+        -- TODO:  Determine if I need to handle more than first file.
+        break
+      end
+    end)
+end
+
 
 function saveHandler.doLoadAll(content)
   if content.global then
@@ -73,6 +102,17 @@ function saveHandler.saveAll()
               local content = JSON.encode_pretty(saveFile)
               Notes.addNotebookTab({ title="New Savefile", body=content })
             end, 3)
+end
+
+function saveHandler.saveWeb()
+  local saveFile = saveHandler.createSaveFile()
+
+  Wait.time(function()
+              local content = JSON.encode_pretty(saveFile)
+              -- WebRequest.post('http://localhost:7071/api/UploadSaveFile',
+              WebRequest.post('https://gloomhavensaveloader.azurewebsites.net/api/UploadSaveFile',
+              content, function(webReturn) log(webReturn.text) end)
+            end, 15)
 end
 
 
