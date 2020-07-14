@@ -54,29 +54,29 @@ function saveHandler.loadFromURL(url)
   -- requires RAW JSON returned form url
   WebRequest.get(url,
   function(webReturn)
+      if webReturn.is_error then
+        log(webReturn.error)
+        return
+      end
       saveFile=webReturn.text
       local content = JSON.decode(saveFile)
-<<<<<<< Updated upstream
-      preparation.start(function() saveHandler.doLoadAll(content) end)
-=======
       Preparation.start(function() saveHandler.doLoadAll(content) end)
->>>>>>> Stashed changes
     end)
 end
 
 function saveHandler.loadFromGist(gist)
   WebRequest.get('https://api.github.com/gists/'..gist,
   function(webReturn)
+      if webReturn.is_error then
+        log(webReturn.error)
+        return
+      end
       saveFile=webReturn.text
       local gistJSON = JSON.decode(saveFile)
       for filename, fileDetails in pairs(gistJSON.files) do
       if not fileDetails.truncated then
         local content = JSON.decode(fileDetails.content)
-<<<<<<< Updated upstream
-        preparation.start(function() saveHandler.doLoadAll(content) end)
-=======
         Preparation.start(function() saveHandler.doLoadAll(content) end)
->>>>>>> Stashed changes
       else
         broadcastToAll("Content Truncated.  Loading Failed")
         -- TODO:  Determine if I need to and how to handle Content Truncated.
@@ -112,19 +112,6 @@ function saveHandler.saveAll()
             end, 3)
 end
 
-<<<<<<< Updated upstream
-function saveHandler.saveWeb()
-  local saveFile = saveHandler.createSaveFile()
-
-  Wait.time(function()
-              local content = JSON.encode_pretty(saveFile)
-              -- WebRequest.post('http://localhost:7071/api/UploadSaveFile',
-              WebRequest.post('https://gloomhavensaveloader.azurewebsites.net/api/UploadSaveFile',
-              content, function(webReturn) log(webReturn.text) end)
-            end, 15)
-end
-
-=======
 function saveHandler.saveWebLocal(gist)
   saveHandler.saveWeb(gist, 'http://localhost:7071/api/UploadSaveFile')
 end
@@ -144,10 +131,16 @@ function saveHandler.saveWeb(gist, url)
   Wait.time(function()
               local content = JSON.encode_pretty(saveFile)
               WebRequest.post(url,
-              content, function(webReturn) log(webReturn.text) end)
+              content, function(webReturn)
+                if webReturn.is_error then
+                  log(webReturn.error)
+                else
+                  log(webReturn.text)
+                  Notes.setNotes(webReturn.text)
+                end
+              end)
             end, 5)
 end
->>>>>>> Stashed changes
 
 function saveHandler.createSaveFile()
   local saveFile = {}
