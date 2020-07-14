@@ -120,12 +120,37 @@ function saveHandler.saveAll()
             end, 3)
 end
 
+
+function saveHandler.checkSaveDelay(url)
+  local saveDelay = 60
+  if url ~= nil and string.find(url, "localhost") then
+    saveDelay = 5
+  end
+
+  local curTime = os.time()
+  local timeSinceLastSave = os.difftime(curTime, saveHandler.lastSaveTime)
+
+  -- check to see if time since last save < 60 seconds
+  if saveHandler.lastSaveTime ~= nil and timeSinceLastSave < saveDelay then
+    local timeToWait = math.ceil(saveDelay - timeSinceLastSave)
+    broadcastToAll("Please wait " .. tostring(timeToWait) .. " seconds before saving again")
+    return true
+  end
+  saveHandler.lastSaveTime = curTime
+  return false
+end
+
+
 function saveHandler.saveWebLocal(gist)
   saveHandler.saveWeb(gist, 'http://localhost:7071/api/UploadSaveFile')
 end
 
 
 function saveHandler.saveWeb(gist, url)
+  if saveHandler.checkSaveDelay(url) then
+    return
+  end
+
   local saveFile = saveHandler.createSaveFile()
 
   if url == nil then
