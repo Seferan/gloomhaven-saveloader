@@ -57,6 +57,10 @@ function saveHandler.loadFromURL(url)
       if webReturn.is_error then
         log(webReturn.error)
         return
+      elseif webReturn.response_code ~= 200 then
+        log("Error loading from URL")
+        log("Response Status Code: " .. webReturn.response_code)
+        return
       end
       saveFile=webReturn.text
       local content = JSON.decode(saveFile)
@@ -69,6 +73,10 @@ function saveHandler.loadFromGist(gist)
   function(webReturn)
       if webReturn.is_error then
         log(webReturn.error)
+        return
+      elseif webReturn.response_code ~= 200 then
+        log("Error loading from GIST")
+        log("Response Status Code: " .. webReturn.response_code)
         return
       end
       saveFile=webReturn.text
@@ -133,7 +141,11 @@ function saveHandler.saveWeb(gist, url)
               WebRequest.post(url,
               content, function(webReturn)
                 if webReturn.is_error then
+                  log("Error attempting to save to web")
                   log(webReturn.error)
+                elseif webReturn.response_code ~= 200 then
+                  log("Error attempting to save to web")
+                  log("Response Status Code: " .. webReturn.response_code)
                 else
                   log(webReturn.text)
                   Notes.setNotes(webReturn.text)
